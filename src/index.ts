@@ -1,7 +1,12 @@
 import express from 'express';
 import router from './routes';
-import {FilterBuilder, SQLiteWrapper, FilterType, LogicalOperator, FilterCondition} from './db/sqlite_wrapper';
-
+import {
+    FilterBuilder,
+    SQLiteWrapper,
+    FilterType,
+    LogicalOperator,
+    FilterCondition,
+} from './db/sqlite_wrapper';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
