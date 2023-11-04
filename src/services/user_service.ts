@@ -1,4 +1,25 @@
 import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { User } from '../models/user';
+import * as bcrypt from 'bcrypt';
+import { FilterBuilder, FilterType } from '../db/sqlite_wrapper';
+export class UserModel implements User {
+    id: number;
+    name: string;
+    email: string;
+    passwordHash: string;
+    createdAt: Date;
+    updatedAt: Date;
+    
+    constructor(user: User) {
+        this.id = user.id;
+        this.name = user.name;
+        this.email = user.email;
+        this.passwordHash = user.passwordHash;
+        this.createdAt = user.createdAt;
+        this.updatedAt = user.updatedAt;
+    }
+}
+
 
 export interface NewUserPayload {
     name: string;
@@ -7,22 +28,85 @@ export interface NewUserPayload {
 }
 
 export class UserService {
+    public static TABLE_NAME = 'users';
     private db?: SQLiteWrapper;
-    private static TABLE_NAME: string = 'users';
-
-    constructor(private newUserPayload: NewUserPayload) {}
-
-    public async insert(): Promise<void> {
-        if (!this.db) return;
-        this.db.insert(UserService.TABLE_NAME, this.newUserPayload);
-    }
 
     public async build(): Promise<void> {
-        this.db = await new SQLiteWrapper('db/kotodo.db').create();
+        this.db = new SQLiteWrapper('db/kotodo.db');
+        await this.db.create();
     }
 
-    public close(): void {
-        if (!this.db) return;
-        this.db.close();
+    public async insert(name: string, email: string, password: string): Promise<number> {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        };
+        const passwordHash = await this.hashPassword(password);
+        return await this.db?.insert(UserService.TABLE_NAME, { name, email, passwordHash });
+    }
+
+    public async get(userId: number): Promise<UserModel> {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        };
+        const user = await this.db.selectAll(
+            UserService.TABLE_NAME,
+            new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
+        );
+        return user[0];
+    }
+
+    public async update(
+        userId: number,
+        name?: string,
+        email?: string,
+        password?: string,
+    ) {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        }
+
+        const updateData: Record<string, any> = {};
+        if (name) {
+            updateData.name = name;
+        }
+        if (email) {
+            updateData.email = email;
+        }
+        if (password) {
+            updateData.passwordHash = await this.hashPassword(password);
+        }
+        await this.db.update(
+            UserService.TABLE_NAME,
+            updateData,
+            new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
+        );
+    }
+
+    public async delete(userId: number): Promise<void> {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        }
+        await this.db.delete(
+            UserService.TABLE_NAME,
+            new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
+        );
+    }
+
+    public async close(): Promise<void> {
+        await this.db?.close();
+    }
+
+    private async hashPassword(password: string): Promise<string> {
+        const saltRounds = 10;
+        const hashedPass: string = await bcrypt.hash(password, saltRounds);
+        return hashedPass;
+    }
+
+    private async verifyPassword(
+        password: string,
+        hashedPassword: string,
+    ): Promise<boolean> {
+        const isMatch = bcrypt.compare(password, hashedPassword);
+        return isMatch;
     }
 }

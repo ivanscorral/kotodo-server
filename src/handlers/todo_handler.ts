@@ -10,6 +10,27 @@ export async function getTodoHandler(req: Request, res: Response) {
     await todo_service.close();
     res.status(201).send(todo);
 }
+// PUT /todos/:id
+export async function updateTodoHandler(req: Request, res: Response) {
+    try {
+        const id = req.params.id;
+        const { title, description } = req.body;
+
+        if (!title && !description) {
+            return res.status(400).json({ error: "Title or description is required" });
+        }
+
+        let todo_service = new TodoService();
+        await todo_service.build();
+        await todo_service.update(Number(id), title, description);
+        await todo_service.close();
+
+        res.status(200).json({ message: `Todo with id ${id} updated` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
 
 export async function revertTodoHandler(req: Request, res: Response) {
     const id = req.body.id;

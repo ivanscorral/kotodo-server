@@ -34,8 +34,21 @@ export async function createUser(
     passwordHash: string,
 ): Promise<void> {
     // Insert the user into the database, getting the id back from the database
-    const userService = new UserService({ name, email, passwordHash });
+    const userService = new UserService();
     await userService.build();
-    await userService.insert();
+    await userService.insert( name, email, passwordHash );
     userService.close();
+}
+
+export async function updateUserHandler(
+    req: Request,
+    res: Response,
+): Promise<void> {
+    const { name, email, password } = req.body;
+    const userId = req.params.id;
+    const userService = new UserService();
+    await userService.build();
+    await userService.update(Number(userId), name, email, password);
+    userService.close();
+    res.status(201).send(`User with id ${userId} updated`);
 }

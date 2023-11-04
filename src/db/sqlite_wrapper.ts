@@ -190,6 +190,31 @@ export class SQLiteWrapper {
             throw error;
         }
     }
+    
+    public async delete(
+        tableName: string,
+        filterBuilder: FilterBuilder,
+    ): Promise<void> {
+        // Build WHERE clause
+        const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
+        if (!whereSql) {
+            throw new Error("No conditions provided for delete");
+        }
+    
+        const sql = `DELETE FROM ${tableName} WHERE ${whereSql}`;
+        const values = whereValues;
+    
+        console.log(`[DELETE statement] ${simulateSqlQuery(sql, values)}`);
+    
+        try {
+            await this.db?.run(sql, values);
+        } catch (err) {
+            console.error(`[ERROR] Failed to delete data: ${err}`);
+            throw err;
+        }
+    }
+
+    
     public async update(
         tableName: string,
         data: Record<string, any>,
@@ -228,8 +253,8 @@ export class SQLiteWrapper {
     public async bulkInsert(
         tableName: string,
         dataList: Record<string, any>[],
-    ): Promise<void> {
-        if (dataList.length === 0) return;
+    ): Promise<number> {
+        if (dataList.length === 0) return 0;
 
         const fields = Object.keys(dataList[0]).join(', ');
         const placeholders = dataList
@@ -246,9 +271,15 @@ export class SQLiteWrapper {
 
         console.log(`[INSERT statement] ${sql}`);
         try {
-            await this.db?.run(sql, values);
-        } catch (err) {
-            throw err;
+            const insertResult = await this.db?.run(sql, values);
+            if (insertResult && typeof insertResult.lastID === 'number') {
+                return insertResult.lastID;
+            } else {
+                throw new Error("Insert operation failed or lastID is not a number");
+            }
+        } catch (error) {
+            console.error(`[ERROR] Failed to insert data: ${error}`);
+            throw error;
         }
     }
 

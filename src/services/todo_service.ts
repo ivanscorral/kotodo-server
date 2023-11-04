@@ -67,6 +67,30 @@ export class TodoService {
         return todo[0];
     }
     
+    public async update(
+        todoId: number,
+        title?: string,
+        description?: string,
+    ) {
+        if (!this.db) 
+        {
+            throw new Error('Database not initialized');
+        }
+        
+        const updateData: Record<string, any> = {};
+        if (title) {
+            updateData.title = title;
+        } 
+        if (description) {
+            updateData.description = description;
+        }
+        await this.db.update(
+            TodoService.TABLE_NAME,
+            updateData,
+            new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
+        );
+    }
+    
     public async getAll(userId: number): Promise<TodoModel[]> {
         if (!this.db) {
             throw new Error('Database not initialized');
