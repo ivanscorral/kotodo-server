@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
 import { NewTodoPayload, TodoModel, TodoService } from '../services/todo_service';
+import { matchedData, validationResult } from 'express-validator';
 
 
 export async function getTodoHandler(req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     const id = req.params.id;
     let todo_service = new TodoService();
     await todo_service.build();
@@ -12,13 +17,12 @@ export async function getTodoHandler(req: Request, res: Response) {
 }
 // PUT /todos/:id
 export async function updateTodoHandler(req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
-        const id = req.params.id;
-        const { title, description } = req.body;
-
-        if (!title && !description) {
-            return res.status(400).json({ error: "Title or description is required" });
-        }
+        const { id, title, description } = matchedData(req);
 
         let todo_service = new TodoService();
         await todo_service.build();
@@ -33,6 +37,10 @@ export async function updateTodoHandler(req: Request, res: Response) {
 }
 
 export async function revertTodoHandler(req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     const id = req.body.id;
     let todo_service = new TodoService();
     await todo_service.build();
@@ -48,7 +56,12 @@ export async function revertTodoHandler(req: Request, res: Response) {
 
 // Handler for inserting a new todo item
 export async function insertTodoHandler(req: Request, res: Response) {
-    const { title, description, userId } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const { title, description, userId } = matchedData(req);
 
     // Create a new todo item
     const newTodoPayload: NewTodoPayload = {
@@ -68,16 +81,24 @@ export async function insertTodoHandler(req: Request, res: Response) {
 
 // Handler for listing all todo items
 export async function listTodosHandler(req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     const userId = req.params.id;
     let todo_service = new TodoService();
     await todo_service.build();
-    let results = await todo_service.getAll(1);
+    let results = await todo_service.getAll(Number(userId));
     await todo_service.close();
-    res.status(201).send(results);
+    return res.status(201).send(results);
 }
 
 
 export async function completeTodoHandler(req: Request, res: Response) {
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     const id = req.body.id;
     let todo_service = new TodoService();
     await todo_service.build();
@@ -88,25 +109,20 @@ export async function completeTodoHandler(req: Request, res: Response) {
     }
     await todo_service.toggleCompletion(id);
     await todo_service.close();
-    res.status(200).send("Task completed");
+    return  res.status(200).send("Task completed");
 }
 export async function deleteTodoHandler(req: Request, res: Response) {
-    const id = Number(req.params.id);
-
-    if (!id || Number.isNaN(id)) {
-        return res.status(400).send({
-            error: 'Id is required/invalid',
-        });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-
+    const { id } = matchedData(req);
+    
     try {
         let todo_service = new TodoService();
         await todo_service.build();
-
-        // The delete method now returns an object with information about the deletion
         const affectedRows = await todo_service.delete(id);
 
-        // Check if any rows were affected
         if (affectedRows === 0) {
             return res.status(404).send({
                 error: `Todo with id ${id} not found`,
@@ -117,7 +133,6 @@ export async function deleteTodoHandler(req: Request, res: Response) {
 
         await todo_service.close();
     } catch (error) {
-        // Handle any errors during the deletion process
         console.error(error);
         res.status(500).send({
             error: 'An error occurred while deleting the Todo',
