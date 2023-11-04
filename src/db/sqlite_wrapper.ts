@@ -194,25 +194,33 @@ export class SQLiteWrapper {
     public async delete(
         tableName: string,
         filterBuilder: FilterBuilder,
-    ): Promise<void> {
+    ): Promise<{ affectedRows: number }> {
         // Build WHERE clause
         const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
         if (!whereSql) {
             throw new Error("No conditions provided for delete");
         }
     
+        // Parameterized SQL query to prevent SQL injection
         const sql = `DELETE FROM ${tableName} WHERE ${whereSql}`;
         const values = whereValues;
     
         console.log(`[DELETE statement] ${simulateSqlQuery(sql, values)}`);
     
         try {
-            await this.db?.run(sql, values);
+            // Assuming that db.run() returns an object with information about the query execution
+            const result = await this.db?.run(sql, values);
+            console.log(`[DELETE result]`, result);
+            // Check if any rows were affected
+            const affectedRows = result?.changes || 0;
+    
+            return { affectedRows };
         } catch (err) {
-            console.error(`[ERROR] Failed to delete data: ${err}`);
+            console.error(`[ERROR] Failed to delete data from ${tableName}: ${err}`);
             throw err;
         }
     }
+    
 
     
     public async update(

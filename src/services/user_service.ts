@@ -82,14 +82,18 @@ export class UserService {
         );
     }
 
-    public async delete(userId: number): Promise<void> {
+    public async delete(userId: number): Promise<number> {
         if (!this.db) {
             throw new Error('Database not initialized');
         }
-        await this.db.delete(
+        const deletionResult = await this.db.delete(
             UserService.TABLE_NAME,
             new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
         );
+        
+        console.log(`[USER SERVICE] Deletion result: ${JSON.stringify(deletionResult)}`);
+        
+        return deletionResult.affectedRows;
     }
 
     public async close(): Promise<void> {

@@ -144,4 +144,21 @@ export class TodoService {
         };
         return todo;
     }
+    
+    public async delete(todoId: number): Promise<number> {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        };
+    
+        const deletionResult = await this.db.delete(
+            TodoService.TABLE_NAME,
+            new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
+        );
+        console.log(`[TODO SERVICE] Deletion result: ${JSON.stringify(deletionResult)}`);
+    
+        return deletionResult.affectedRows;
+    }
+    
+    
+    
 }

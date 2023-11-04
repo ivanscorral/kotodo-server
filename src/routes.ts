@@ -6,10 +6,12 @@ import {
     getTodoHandler,
     revertTodoHandler,
     updateTodoHandler,
+    deleteTodoHandler
 } from './handlers/todo_handler';
 import { 
     createUserHandler,
-    updateUserHandler } from './handlers/user_handler';
+    updateUserHandler,
+    deleteUserHandler } from './handlers/user_handler';
 const router = express.Router();
 
     router.get('/todos', listTodosHandler);
@@ -18,9 +20,10 @@ const router = express.Router();
     router.post('/todos', insertTodoHandler);
     router.post('/todos/complete', completeTodoHandler);    
     router.post('/todos/revert', revertTodoHandler);
+    router.delete('/todos/:id', deleteTodoHandler);
     
-router.post('/users/new', createUserHandler);
 router.put('/users/:id', updateUserHandler);
-
+router.post('/users/new', createUserHandler);
+router.delete('/users/:id', deleteUserHandler);
 export default router;
     

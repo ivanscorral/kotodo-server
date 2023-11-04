@@ -52,3 +52,43 @@ export async function updateUserHandler(
     userService.close();
     res.status(201).send(`User with id ${userId} updated`);
 }
+
+export async function deleteUserHandler(
+    req: Request,
+    res: Response,
+): Promise<void> {
+    const userId = Number(req.params.id);
+    
+    if (!userId || Number.isNaN(userId)) {
+        return res.status(400).send({
+            error: 'Id is required/invalid',
+        });
+    }
+    
+    try {
+        let userService = new UserService();
+        await userService.build();
+        // The delete method now returns an object with information about the deletion
+        const affectedRows = await userService.delete(userId);
+        
+        // Check if any rows were affected
+        if (affectedRows === 0) {
+            return res.status(404).send({
+                error: `User with id ${userId} not found`,
+            });
+        }
+        
+        res.status(204).send(); // 204 status code for successful deletion
+        
+        await userService.close();  
+        
+    } catch (error) {
+        // Handle any errors during the deletion process
+        console.error(error);
+        res.status(500).send({
+            error: 'Internal Server Error',
+        })
+    }
+    
+
+}

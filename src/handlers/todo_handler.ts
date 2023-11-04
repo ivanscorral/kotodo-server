@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { NewTodoPayload, TodoService } from '../services/todo_service';
+import { NewTodoPayload, TodoModel, TodoService } from '../services/todo_service';
 
 
 export async function getTodoHandler(req: Request, res: Response) {
@@ -90,3 +90,38 @@ export async function completeTodoHandler(req: Request, res: Response) {
     await todo_service.close();
     res.status(200).send("Task completed");
 }
+export async function deleteTodoHandler(req: Request, res: Response) {
+    const id = Number(req.params.id);
+
+    if (!id || Number.isNaN(id)) {
+        return res.status(400).send({
+            error: 'Id is required/invalid',
+        });
+    }
+
+    try {
+        let todo_service = new TodoService();
+        await todo_service.build();
+
+        // The delete method now returns an object with information about the deletion
+        const affectedRows = await todo_service.delete(id);
+
+        // Check if any rows were affected
+        if (affectedRows === 0) {
+            return res.status(404).send({
+                error: `Todo with id ${id} not found`,
+            });
+        }
+
+        res.status(204).send(); // 204 status code for successful deletion
+
+        await todo_service.close();
+    } catch (error) {
+        // Handle any errors during the deletion process
+        console.error(error);
+        res.status(500).send({
+            error: 'An error occurred while deleting the Todo',
+        });
+    }
+}
+
