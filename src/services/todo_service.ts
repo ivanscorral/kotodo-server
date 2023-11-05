@@ -36,6 +36,17 @@ export class TodoService {
         this.db = new SQLiteWrapper('db/kotodo.db');
         await this.db.create();
     }
+    
+    public async retrieveByStatus(status: boolean, userId: number): Promise<TodoModel[]> {
+        if (!this.db) {
+            throw new Error('Database not initialized');
+        };
+        return await this.db.selectAll(
+            TodoService.TABLE_NAME,
+            new FilterBuilder().addCondition('user_id', userId, FilterType.EQUAL).addCondition('completed', status, FilterType.EQUAL),
+        );
+        
+    }
 
     public async insert(newTodoPayload: NewTodoPayload): Promise<number> {
         if (!this.db) {

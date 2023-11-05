@@ -20,10 +20,32 @@ export async function getTodoHandler(req: Request, res: Response) {
         res.status(200).send(todo);
     } else {
         // 404 Not Found
-        res.status(404).send("Todo not found");
+        res.status(404).send({ error: `Todo with id ${id} not found` });
     }
 }
 
+export async function retrieveTodosByStatusHandler(req: Request, res: Response) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        // 400 Bad Request
+        return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+        const { status, userId } = matchedData(req);
+        const intStatus = parseInt(status);
+        let todoService = new TodoService();
+        await todoService.build();
+
+        const todos = await todoService.retrieveByStatus(status, userId);
+        await todoService.close();
+
+        res.status(200).json({ todos });
+    } catch (error) {
+        console.error(error);
+        // 500 Internal Server Error
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
 // PUT /todos/:id
 export async function updateTodoHandler(req: Request, res: Response) {
     const errors = validationResult(req);
@@ -36,16 +58,11 @@ export async function updateTodoHandler(req: Request, res: Response) {
         let todo_service = new TodoService();
         await todo_service.build();
 
-        let updated = await todo_service.update(Number(id), title, description);
+        await todo_service.update(Number(id), title, description);
         await todo_service.close();
 
-        if (updated) {
-            // 200 OK
             res.status(200).json({ message: `Todo with id ${id} updated` });
-        } else {
-            // 404 Not Found
-            res.status(404).json({ message: `Todo with id ${id} not found` });
-        }
+       
     } catch (error) {
         console.error(error);
         // 500 Internal Server Error
@@ -67,11 +84,13 @@ export async function revertTodoHandler(req: Request, res: Response) {
     let isCompleted = await todo_service.getCompletionStatus(id);
     if (isCompleted === null) {
         // 404 Not Found
-        return res.status(404).send("Task not found");
+        await todo_service.close();
+        return res.status(404).send({ error: `Task with id ${id} not found` });
     }
     if (!isCompleted) {
         // 409 Conflict
-        return res.status(409).send("Task not completed");
+        await todo_service.close();
+        return res.status(409).send( { error: `Conflict: Task with id ${id} is not completed` } );
     }
     await todo_service.toggleCompletion(id);
     await todo_service.close();
@@ -185,10 +204,7 @@ export async function deleteTodoHandler(req: Request, res: Response) {
 
         if (affectedRows === 0) {
             return res.status(404).send({
-                error: `Nothing to delete.`,
-                {
-                    body: req.body,
-                }
+                error: 'Nothing to delete.',
             });
         }
 
