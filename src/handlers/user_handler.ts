@@ -1,9 +1,10 @@
 import * as bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
+import { matchedData, validationResult } from 'express-validator';
 
 import { UserService } from '../services/user_service';
 import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { User } from '../models/user';
 
 export async function createUserHandler(
     req: Request,
@@ -15,8 +16,13 @@ export async function createUserHandler(
     }
     const { name, email, password } = req.body;
     const passwordHash = await hashPassword(password);
-    const user = await createUser(name, email, passwordHash);
-    return res.status(201).json(user);
+    try {
+        const user = await createUser(name, email, passwordHash);
+        return res.status(201).json({ message: 'User created', data: user });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
 }
 
 async function hashPassword(password: string): Promise<string> {
@@ -37,13 +43,20 @@ export async function createUser(
     name: string,
     email: string,
     passwordHash: string,
-) {
+): Promise<User> {
     // Insert the user into the database, getting the id back from the database
 
     const userService = new UserService();
     await userService.build();
-    await userService.insert( name, email, passwordHash );
+    let insertedId = await userService.insert( name, email, passwordHash );
+    let user: User;
+    if (insertedId === null) {
+        throw new Error('Failed to insert user');
+    } else {
+        user = await userService.get(insertedId);
+    } 
     userService.close();
+    return user;
 }
 
 export async function updateUserHandler(
@@ -54,13 +67,17 @@ export async function updateUserHandler(
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { name, email, password } = req.body;
-    const userId = req.params.id;
-    const userService = new UserService();
-    await userService.build();
-    await userService.update(Number(userId), name, email, password);
-    userService.close();
-    return res.status(201).send(`User with id ${userId} updated`);
+   try {
+        const { id, name, email, password } = matchedData(req);
+        let userService = new UserService();
+        await userService.build();
+        let updatedUser = await userService.update(id, name, email, password);
+        userService.close();
+        return res.status(200).json({ message: 'User updated', data: updatedUser });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error', code: 500 });
+    }
 }
 
 export async function deleteUserHandler(

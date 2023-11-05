@@ -82,24 +82,27 @@ export class TodoService {
         todoId: number,
         title?: string,
         description?: string,
-    ) {
+    ): Promise<any> {
         if (!this.db) 
         {
             throw new Error('Database not initialized');
         }
         
         const updateData: Record<string, any> = {};
-        if (title) {
-            updateData.title = title;
-        } 
-        if (description) {
-            updateData.description = description;
+        if (title) updateData.title = title;
+        if (description) updateData.description = description; 
+        
+        if (Object.keys(updateData).length) {
+            updateData.updatedAt = new Date().toISOString();
         }
+        
         await this.db.update(
             TodoService.TABLE_NAME,
             updateData,
             new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
         );
+        
+        return updateData;
     }
     
     public async getAll(userId: number): Promise<TodoModel[]> {
@@ -121,7 +124,7 @@ export class TodoService {
         if (todo.length === 0) return;
         await this.db.update(
             TodoService.TABLE_NAME,
-            { completed: todo[0].completed === 0 ? 1 : 0 },
+            { completed: todo[0].completed === 0 ? 1 : 0, updatedAt: new Date().toISOString() },
             new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
         );
     }

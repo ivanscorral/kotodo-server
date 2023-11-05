@@ -60,26 +60,26 @@ export class UserService {
         name?: string,
         email?: string,
         password?: string,
-    ) {
+    ): Promise<any> {
         if (!this.db) {
             throw new Error('Database not initialized');
         }
-
+    
         const updateData: Record<string, any> = {};
-        if (name) {
-            updateData.name = name;
-        }
-        if (email) {
-            updateData.email = email;
-        }
-        if (password) {
-            updateData.passwordHash = await this.hashPassword(password);
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (password) updateData.passwordHash = await this.hashPassword(password);
+        
+        if (Object.keys(updateData).length) {
+            updateData.updatedAt = new Date().toISOString();
         }
         await this.db.update(
             UserService.TABLE_NAME,
             updateData,
             new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
         );
+        
+        return updateData;
     }
 
     public async delete(userId: number): Promise<number> {

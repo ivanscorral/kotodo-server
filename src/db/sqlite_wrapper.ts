@@ -249,7 +249,8 @@ export class SQLiteWrapper {
         console.log(`[UPDATE statement] ${simulateSqlQuery(sql, values)}`);
     
         try {
-            await this.db?.run(sql, values);
+            const result = await this.db?.run(sql, values);
+            console.log(`[UPDATE result]`, result);
         } catch (err) {
             console.error(`[ERROR] Failed to update data: ${err}`);
             throw err;
