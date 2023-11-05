@@ -1,0 +1,9 @@
+{
+    "eslint.options": {
+      "overrideConfigFile": "./.eslintrc.js"  // or your config file
+    },
+    "eslint.workingDirectories": [
+      "./src/handlers"
+    ]
+  }
+  

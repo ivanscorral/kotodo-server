@@ -1,12 +1,5 @@
-import express from 'express';
-import router from './routes';
-import {
-    FilterBuilder,
-    SQLiteWrapper,
-    FilterType,
-    LogicalOperator,
-    FilterCondition,
-} from './db/sqlite_wrapper';
+import express from "express";
+import router from "./routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,5 +12,5 @@ app.use(router);
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
