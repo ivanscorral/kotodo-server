@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from '../db/sqlite_wrapper';
-import { FilterBuilder, FilterType } from '../db/sqlite_wrapper';
+import { SQLiteWrapper } from '../db/SqliteWrapper';
+import { FilterBuilder, FilterType } from '../db/SqliteWrapper';
 import Todo from '../models/todo';
 
 export interface NewTodoPayload {

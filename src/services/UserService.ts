@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
 import * as bcrypt from 'bcrypt';
-import { FilterBuilder, FilterType } from '../db/sqlite_wrapper';
+import { FilterBuilder, FilterType } from '../db/SqliteWrapper';
 export class UserModel implements User {
   id: number;
   name: string;

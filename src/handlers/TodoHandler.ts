@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { NewTodoPayload, TodoModel, TodoService } from '../services/todo_service';
+import { NewTodoPayload, TodoModel, TodoService } from '../services/TodoService';
 import { matchedData, validationResult } from 'express-validator';
 
 

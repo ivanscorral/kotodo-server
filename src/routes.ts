@@ -7,27 +7,27 @@ import {
   retrieveTodosByStatusHandler,
   revertTodoHandler,
   updateTodoHandler,
-} from './handlers/todo_handler';
+} from './handlers/TodoHandler';
 import {
   createUserHandler,
   deleteUserHandler,
   loginHandler,
   updateUserHandler,
-} from './handlers/user_handler';
+} from './handlers/UserHandler';
 
 import {
   createUserValidation,
   deleteUserValidation,
   loginValidation,
   updateUserValidation,
-} from './validations/user_validations';
+} from './validations/UserValidations';
 import {
   bodyIdValidation,
   idTodoValidation,
   insertTodoValidations,
   retrieveTodosByStatusValidations,
   updateTodoValidations,
-} from './validations/todo_validations';
+} from './validations/TodoValidations';
 import express from 'express';
 
 const router = express.Router();

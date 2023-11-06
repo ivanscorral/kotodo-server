@@ -2,8 +2,8 @@ import * as bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { matchedData, validationResult } from 'express-validator';
 
-import { UserService } from '../services/user_service';
-import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { UserService } from '../services/UserService';
+import { SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
 
 export async function loginHandler(
