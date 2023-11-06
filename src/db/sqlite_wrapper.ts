@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import sqlite3 from "sqlite3";
-import { open, Database } from "sqlite";
+import sqlite3 from 'sqlite3';
+import { open, Database } from 'sqlite';
 export function formatValue<T>(value: T): string {
-  if (typeof value === "string") {
-    return `'${value.replace(/'/g, "''")}'`;
+  if (typeof value === 'string') {
+    return `'${value.replace(/'/g, '\'\'')}'`;
   }
-  if (typeof value === "boolean") {
-    return value ? "1" : "0";
+  if (typeof value === 'boolean') {
+    return value ? '1' : '0';
   }
   if (value === null || value === undefined) {
-    return "NULL";
+    return 'NULL';
   }
   return value.toString();
 }
@@ -24,18 +24,18 @@ export function simulateSqlQuery(query: string, params: any[]): string {
 }
 
 export enum FilterType {
-    EQUAL = "=",
-    NOT_EQUAL = "<>",
-    LESS_THAN = "<",
-    GREATER_THAN = ">",
-    LESS_THAN_OR_EQUAL = "<=",
-    GREATER_THAN_OR_EQUAL = ">=",
-    LIKE = "LIKE",
+    EQUAL = '=',
+    NOT_EQUAL = '<>',
+    LESS_THAN = '<',
+    GREATER_THAN = '>',
+    LESS_THAN_OR_EQUAL = '<=',
+    GREATER_THAN_OR_EQUAL = '>=',
+    LIKE = 'LIKE',
 }
 
 export enum LogicalOperator {
-    AND = "AND",
-    OR = "OR",
+    AND = 'AND',
+    OR = 'OR',
 }
 
 export class FilterCondition {
@@ -97,7 +97,7 @@ export class SQLiteWrapper {
         values: any[];
     } {
     if (!filterBuilder) {
-      return { sql: "", values: [] };
+      return { sql: '', values: [] };
     }
 
     const conditions = filterBuilder.build();
@@ -128,7 +128,7 @@ export class SQLiteWrapper {
     tableName: string,
     filterBuilder?: FilterBuilder,
   ): Promise<any> {
-    const selectedRows = Array.isArray(rows) ? rows.join(", ") : rows;
+    const selectedRows = Array.isArray(rows) ? rows.join(', ') : rows;
     const { sql, values } = this.buildSqlQuery(filterBuilder);
     let fullSql = `SELECT ${selectedRows} FROM '${tableName}'`;
     if (sql) {
@@ -174,17 +174,17 @@ export class SQLiteWrapper {
   }
 
   public async insert(tableName: string, data: Record<string, any>): Promise<number> {
-    const fields = Object.keys(data).join(", ");
-    const placeholders = Object.keys(data).map(() => "?").join(", ");
+    const fields = Object.keys(data).join(', ');
+    const placeholders = Object.keys(data).map(() => '?').join(', ');
     const values = Object.values(data);
     const sql = `INSERT INTO ${tableName} (${fields}) VALUES (${placeholders})`;
     
     try {
       const insertResult = await this.db?.run(sql, values);
-      if (insertResult && typeof insertResult.lastID === "number") {
+      if (insertResult && typeof insertResult.lastID === 'number') {
         return insertResult.lastID;
       } else {
-        throw new Error("Insert operation failed or lastID is not a number");
+        throw new Error('Insert operation failed or lastID is not a number');
       }
     } catch (error) {
       console.error(`[ERROR] Failed to insert data: ${error}`);
@@ -199,7 +199,7 @@ export class SQLiteWrapper {
     // Build WHERE clause
     const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
     if (!whereSql) {
-      throw new Error("No conditions provided for delete");
+      throw new Error('No conditions provided for delete');
     }
     
     // Parameterized SQL query to prevent SQL injection
@@ -211,7 +211,7 @@ export class SQLiteWrapper {
     try {
       // Assuming that db.run() returns an object with information about the query execution
       const result = await this.db?.run(sql, values);
-      console.log("[DELETE result]", result);
+      console.log('[DELETE result]', result);
       // Check if any rows were affected
       const affectedRows = result?.changes || 0;
     
@@ -230,18 +230,18 @@ export class SQLiteWrapper {
     filterBuilder: FilterBuilder,
   ): Promise<void> {
     if (!Object.keys(data).length) {
-      throw new Error("No data provided to update");
+      throw new Error('No data provided to update');
     }
     
     // Build SET clause
     const setParts = Object.keys(data).map(key => `${key} = ?`);
-    const setSql = setParts.join(", ");
+    const setSql = setParts.join(', ');
     const setValues = Object.values(data);
     
     // Build WHERE clause
     const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
     if (!whereSql) {
-      throw new Error("No conditions provided to update");
+      throw new Error('No conditions provided to update');
     }
     
     const sql = `UPDATE ${tableName} SET ${setSql} WHERE ${whereSql}`;
@@ -251,7 +251,7 @@ export class SQLiteWrapper {
     
     try {
       const result = await this.db?.run(sql, values);
-      console.log("[UPDATE result]", result);
+      console.log('[UPDATE result]', result);
     } catch (err) {
       console.error(`[ERROR] Failed to update data: ${err}`);
       throw err;
@@ -266,15 +266,15 @@ export class SQLiteWrapper {
   ): Promise<number> {
     if (dataList.length === 0) return 0;
 
-    const fields = Object.keys(dataList[0]).join(", ");
+    const fields = Object.keys(dataList[0]).join(', ');
     const placeholders = dataList
       .map(
         () =>
           `(${Object.keys(dataList[0])
-            .map(() => "?")
-            .join(", ")})`,
+            .map(() => '?')
+            .join(', ')})`,
       )
-      .join(", ");
+      .join(', ');
     const values = dataList.flatMap((obj) => Object.values(obj));
 
     const sql = `INSERT INTO ${tableName} (${fields}) VALUES ${placeholders}`;
@@ -282,10 +282,10 @@ export class SQLiteWrapper {
     console.log(`[INSERT statement] ${sql}`);
     try {
       const insertResult = await this.db?.run(sql, values);
-      if (insertResult && typeof insertResult.lastID === "number") {
+      if (insertResult && typeof insertResult.lastID === 'number') {
         return insertResult.lastID;
       } else {
-        throw new Error("Insert operation failed or lastID is not a number");
+        throw new Error('Insert operation failed or lastID is not a number');
       }
     } catch (error) {
       console.error(`[ERROR] Failed to insert data: ${error}`);

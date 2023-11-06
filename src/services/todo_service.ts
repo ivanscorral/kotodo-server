@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from "../db/sqlite_wrapper";
-import { FilterBuilder, FilterType } from "../db/sqlite_wrapper";
-import Todo from "../models/todo";
+import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { FilterBuilder, FilterType } from '../db/sqlite_wrapper';
+import Todo from '../models/todo';
 
 export interface NewTodoPayload {
     title: string;
@@ -30,39 +30,39 @@ export class TodoModel implements Todo {
 }
 
 export class TodoService {
-  public static TABLE_NAME = "todos";
+  public static TABLE_NAME = 'todos';
   private db?: SQLiteWrapper;
     
   public async build(): Promise<void> {
-    this.db = new SQLiteWrapper("db/kotodo.db");
+    this.db = new SQLiteWrapper('db/kotodo.db');
     await this.db.create();
   }
     
   public async retrieveByStatus(status: boolean, userId: number): Promise<TodoModel[]> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     return await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("user_id", userId, FilterType.EQUAL).addCondition("completed", status, FilterType.EQUAL),
+      new FilterBuilder().addCondition('user_id', userId, FilterType.EQUAL).addCondition('completed', status, FilterType.EQUAL),
     );
         
   }
 
   public async insert(newTodoPayload: NewTodoPayload): Promise<number> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     return await this.db?.insert(TodoService.TABLE_NAME, newTodoPayload);
   }
     
   public async getCompletionStatus(todoId: number): Promise<boolean> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     const isCompleted = await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     )
     if (isCompleted.length === 0) return false;
     return isCompleted[0].completed === 1;
@@ -70,11 +70,11 @@ export class TodoService {
     
   public async get(todoId: number): Promise<TodoModel> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     const todo = await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     );
     return todo[0];
   }
@@ -86,7 +86,7 @@ export class TodoService {
   ): Promise<any> {
     if (!this.db) 
     {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
         
     const updateData: Record<string, any> = {};
@@ -100,7 +100,7 @@ export class TodoService {
     await this.db.update(
       TodoService.TABLE_NAME,
       updateData,
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     );
         
     return updateData;
@@ -108,11 +108,11 @@ export class TodoService {
     
   public async getAll(userId: number): Promise<TodoModel[]> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     return await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("user_id", userId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('user_id', userId, FilterType.EQUAL),
     );
   }
     
@@ -120,24 +120,24 @@ export class TodoService {
     if (!this.db) return;
     const todo = await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     );
     if (todo.length === 0) return;
     await this.db.update(
       TodoService.TABLE_NAME,
       { completed: todo[0].completed === 0 ? 1 : 0, updatedAt: new Date().toISOString() },
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async getFromUserId(userId: number): Promise<any> {
-    console.log("Get todos for user: " + userId);
+    console.log('Get todos for user: ' + userId);
     console.log(this.db);
     return await this.db?.selectAll(
       TodoService.TABLE_NAME,
       new FilterBuilder().addCondition(
-        "user_id",
+        'user_id',
         userId,
         FilterType.EQUAL,
       ),
@@ -163,12 +163,12 @@ export class TodoService {
     
   public async delete(todoId: number): Promise<number> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     
     const deletionResult = await this.db.delete(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
     );
     console.log(`[TODO SERVICE] Deletion result: ${JSON.stringify(deletionResult)}`);
     

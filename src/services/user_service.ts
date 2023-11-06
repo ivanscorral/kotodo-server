@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from "../db/sqlite_wrapper";
-import { User } from "../models/user";
-import * as bcrypt from "bcrypt";
-import { FilterBuilder, FilterType } from "../db/sqlite_wrapper";
+import { SQLiteWrapper } from '../db/sqlite_wrapper';
+import { User } from '../models/user';
+import * as bcrypt from 'bcrypt';
+import { FilterBuilder, FilterType } from '../db/sqlite_wrapper';
 export class UserModel implements User {
   id: number;
   name: string;
@@ -29,17 +29,35 @@ export interface NewUserPayload {
 }
 
 export class UserService {
-  public static TABLE_NAME = "users";
+  public static TABLE_NAME = 'users';
   private db?: SQLiteWrapper;
 
   public async build(): Promise<void> {
-    this.db = new SQLiteWrapper("db/kotodo.db");
+    this.db = new SQLiteWrapper('db/kotodo.db');
     await this.db.create();
   }
+  
+  public async getByNameOrEmail(name?: string, email?: string): Promise<UserModel> {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    
+    const filterBuilder = new FilterBuilder();
+    if (name) filterBuilder.addCondition('name', name, FilterType.EQUAL);
+    if (email) filterBuilder.addCondition('email', email, FilterType.EQUAL);
+  
+    const users = await this.db.selectAll(UserService.TABLE_NAME, filterBuilder);
+    if (users.length === 0) {
+      throw new Error('User not found');
+    }
+  
+    return new UserModel(users[0]);
+  }
+  
 
   public async insert(name: string, email: string, password: string): Promise<number> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     const passwordHash = await this.hashPassword(password);
     return await this.db?.insert(UserService.TABLE_NAME, { name, email, passwordHash });
@@ -47,11 +65,11 @@ export class UserService {
 
   public async get(userId: number): Promise<UserModel> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     const user = await this.db.selectAll(
       UserService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", userId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
     );
     return user[0];
   }
@@ -63,7 +81,7 @@ export class UserService {
     password?: string,
   ): Promise<any> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     
     const updateData: Record<string, any> = {};
@@ -77,7 +95,7 @@ export class UserService {
     await this.db.update(
       UserService.TABLE_NAME,
       updateData,
-      new FilterBuilder().addCondition("id", userId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
     );
         
     return updateData;
@@ -85,11 +103,11 @@ export class UserService {
 
   public async delete(userId: number): Promise<number> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new Error('Database not initialized');
     }
     const deletionResult = await this.db.delete(
       UserService.TABLE_NAME,
-      new FilterBuilder().addCondition("id", userId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', userId, FilterType.EQUAL),
     );
         
     console.log(`[USER SERVICE] Deletion result: ${JSON.stringify(deletionResult)}`);
@@ -107,7 +125,7 @@ export class UserService {
     return hashedPass;
   }
 
-  private async verifyPassword(
+  public async verifyPassword(
     password: string,
     hashedPassword: string,
   ): Promise<boolean> {

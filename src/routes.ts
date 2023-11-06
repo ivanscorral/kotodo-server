@@ -1,34 +1,53 @@
 import {
+  completeTodoHandler,
+  deleteTodoHandler,
+  getTodoHandler,
   insertTodoHandler,
   listTodosHandler,
-  completeTodoHandler,
-  getTodoHandler,
+  retrieveTodosByStatusHandler,
   revertTodoHandler,
   updateTodoHandler,
-  deleteTodoHandler,
-  retrieveTodosByStatusHandler
-} from "./handlers/todo_handler";
-import { 
+} from './handlers/todo_handler';
+import {
   createUserHandler,
+  deleteUserHandler,
+  loginHandler,
   updateUserHandler,
-  deleteUserHandler } from "./handlers/user_handler";
-    
-import { createUserValidation, updateUserValidation, deleteUserValidation } from "./validations/user_validations";
-import { idTodoValidation, updateTodoValidations, insertTodoValidations, bodyIdValidation, retrieveTodosByStatusValidations } from "./validations/todo_validations";
+} from './handlers/user_handler';
+
+import {
+  createUserValidation,
+  deleteUserValidation,
+  loginValidation,
+  updateUserValidation,
+} from './validations/user_validations';
+import {
+  bodyIdValidation,
+  idTodoValidation,
+  insertTodoValidations,
+  retrieveTodosByStatusValidations,
+  updateTodoValidations,
+} from './validations/todo_validations';
+import express from 'express';
+
 const router = express.Router();
 
-router.get("/todos/all/:id", idTodoValidation, listTodosHandler);
-router.get("/todos/:id", idTodoValidation, getTodoHandler);
-router.get("/todos/status/:status", retrieveTodosByStatusValidations, retrieveTodosByStatusHandler);
+router.get('/todos/all/:id', idTodoValidation, listTodosHandler);
+router.get('/todos/:id', idTodoValidation, getTodoHandler);
+router.get(
+  '/todos/status/:status',
+  retrieveTodosByStatusValidations,
+  retrieveTodosByStatusHandler,
+);
 
-router.put("/todos/:id", updateTodoValidations, updateTodoHandler);
-router.post("/todos", insertTodoValidations, insertTodoHandler);
-router.post("/todos/complete", bodyIdValidation, completeTodoHandler);    
-router.post("/todos/revert", bodyIdValidation, revertTodoHandler);
-router.delete("/todos/:id", bodyIdValidation, deleteTodoHandler);
+router.put('/todos/:id', updateTodoValidations, updateTodoHandler);
+router.post('/todos', insertTodoValidations, insertTodoHandler);
+router.post('/todos/complete', bodyIdValidation, completeTodoHandler);
+router.post('/todos/revert', bodyIdValidation, revertTodoHandler);
+router.delete('/todos/:id', bodyIdValidation, deleteTodoHandler);
 
-router.put("/users/:id", updateUserValidation, updateUserHandler);
-router.post("/users/new", createUserValidation, createUserHandler);
-router.delete("/users/:id", deleteUserValidation, deleteUserHandler);
+router.put('/users/:id', updateUserValidation, updateUserHandler);
+router.post('/users/new', createUserValidation, createUserHandler);
+router.post('/users/login', loginValidation, loginHandler);
+router.delete('/users/:id', deleteUserValidation, deleteUserHandler);
 export default router;
-    
