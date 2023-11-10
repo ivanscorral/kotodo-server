@@ -1,7 +1,7 @@
 import jwt, { JsonWebTokenError, TokenExpiredError} from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 export interface TokenStrategy {
-  createToken(userId: number, expiresIn: string): string;
+  createToken(userId: number, username: string,expiresIn: string): string;
   verifyToken(token: string): { valid: boolean; error?: string; userId?: number };
 }
 
@@ -12,9 +12,10 @@ export class JWTStrategy implements TokenStrategy {
     this.secret = secret;
   }
   
-  createToken(userId: number, expiresIn: string): string {
+  createToken(userId: number, username: string, expiresIn: string): string {
     const payload = {
       userId,
+      username,
       jti: uuidv4(),
     };
     const options = {
@@ -23,10 +24,10 @@ export class JWTStrategy implements TokenStrategy {
     return jwt.sign(payload, this.secret, options);
   }
   
-  verifyToken(token: string): { valid: boolean; error?: string; userId?: number } {
+  verifyToken(token: string): { valid: boolean; error?: string; userId?: number, username?: string } {
     try {
       const decoded = jwt.verify(token, this.secret) as jwt.JwtPayload;
-      return { valid: true, userId: decoded.userId };
+      return { valid: true, userId: decoded.userId, username: decoded.username };
     } catch (error) {
       if (error instanceof TokenExpiredError) {
         return { valid: false, error: 'Token expired' };
@@ -51,8 +52,8 @@ export class TokenContext {
     this.strategy = strategy;
   }
   
-  createToken(userId: number, expiresIn: string): string {
-    return this.strategy.createToken(userId, expiresIn);
+  createToken(userId: number, username: string,expiresIn: string): string {
+    return this.strategy.createToken(userId, username, expiresIn);
   }
   
   verifyToken(token: string): { valid: boolean; error?: string; userId?: number } {
