@@ -31,8 +31,8 @@ export async function loginHandler(
       return res.status(401).json({ error: 'Invalid credentials', code: 401 });
     } else {
       // Generate a JWT, with the user's id and an expiration time of 7 days
-      let token = tokenContext.createToken(user.id, expirationTime);
-      return res.status(200).json({ message: 'Login successful', jwt: token, expirationTime });
+      let token = tokenContext.createToken(user.id, user.name, expirationTime);
+      return res.status(200).json({ message: 'Login successful', data: { jwt: token, expirationTime } });
     }
   } catch (error) {
     console.error(error);
