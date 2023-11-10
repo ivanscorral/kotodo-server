@@ -18,5 +18,5 @@ const jwtStrategy = new JWTStrategy('mysecretkey');
 const tokenContext = new TokenContext(jwtStrategy);
 
 // Create a token
-const token = tokenContext.createToken(1, '15m');
+const token = tokenContext.createToken(1, 'fakeusername', '15m');
 console.log(token);
