@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { NewTodoPayload, TodoModel, TodoService } from '../services/TodoService';
 import { matchedData, validationResult } from 'express-validator';
-
+import { RequestWithUserId } from '../middleware/AuthenticationMiddleware';
 
 // GET /todos/:id
 export async function getTodoHandler(req: Request, res: Response) {
@@ -74,17 +74,18 @@ export async function updateTodoHandler(req: Request, res: Response) {
 }
 
 // POST /todos/revert
-export async function revertTodoHandler(req: Request, res: Response) {
+export async function revertTodoHandler(req: RequestWithUserId, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 400 Bad Request
     return res.status(400).json({ error: errors.array(), code: 400 });
   }
   const id = req.body.id;
+  const userId = Number(req.userId);
   const todo_service = new TodoService();
   await todo_service.build();
   console.log(`[POST] /todos/revert id: ${id}`);
-  const isCompleted = await todo_service.getCompletionStatus(id);
+  const isCompleted = await todo_service.getCompletionStatus(id, userId);
   if (isCompleted === null) {
     // 404 Not Found
     await todo_service.close();
@@ -103,14 +104,15 @@ export async function revertTodoHandler(req: Request, res: Response) {
 
 
 // Handler for inserting a new todo item// Handler for inserting a new todo item
-export async function insertTodoHandler(req: Request, res: Response) {
+export async function insertTodoHandler(req: RequestWithUserId, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 400 Bad Request: The server could not understand the request due to invalid syntax.
     return res.status(400).json({ error: errors.array(), code: 400 });
   }
     
-  const { title, description, userId } = matchedData(req);
+  const userId = Number(req.userId);
+  const { title, description } = matchedData(req);
 
   const newTodoPayload: NewTodoPayload = {
     title,
@@ -137,19 +139,21 @@ export async function insertTodoHandler(req: Request, res: Response) {
 }
 
 // Handler for listing all todo items
-export async function listTodosHandler(req: Request, res: Response) {
+export async function listTodosHandler(req: RequestWithUserId, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 400 Bad Request: The server could not understand the request due to invalid syntax.
     return res.status(400).json({ error: errors.array(), code: 400 });
   }
 
-  const userId = req.params.id;
+  const userId = Number(req.userId);
+  
+
   const todo_service = new TodoService();
   await todo_service.build();
 
   try {
-    const results = await todo_service.getAll(Number(userId));
+    const results = await todo_service.getAll(userId);
     await todo_service.close();
         
     // 200 OK: The request has succeeded.
@@ -164,7 +168,7 @@ export async function listTodosHandler(req: Request, res: Response) {
 
 
 
-export async function completeTodoHandler(req: Request, res: Response) {
+export async function completeTodoHandler(req: RequestWithUserId, res: Response) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 400 Bad Request: The server could not understand the request due to invalid syntax.
@@ -172,12 +176,13 @@ export async function completeTodoHandler(req: Request, res: Response) {
   }
 
   const id = req.body.id;
+  const userId = Number(req.userId);
   const todo_service = new TodoService();
   await todo_service.build();
     
   console.log(`[POST] /todos/complete id: ${id}`);
     
-  const isCompleted = await todo_service.getCompletionStatus(id);
+  const isCompleted = await todo_service.getCompletionStatus(id, userId);
   if (isCompleted === null) {
     // 404 Not Found: The server can not find the requested resource.
     return res.status(404).json({ error: `Task with id ${id} not found`, code: 404 } );
@@ -222,4 +227,3 @@ export async function deleteTodoHandler(req: Request, res: Response) {
     });
   }
 }
-

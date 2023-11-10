@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from '../db/SqliteWrapper';
-import { FilterBuilder, FilterType } from '../db/SqliteWrapper';
+import { SQLiteWrapper, FilterBuilder } from '../db/SqliteWrapper';
+import { FilterType } from '../db/filterTypes';
 import Todo from '../models/todo';
 
 export interface NewTodoPayload {
@@ -12,7 +12,7 @@ export interface NewTodoPayload {
 export class TodoModel implements Todo {
   public id: number;
   public title: string;
-  public description: string | null;
+  public description?: string;
   public completed: boolean;
   public createdAt: Date;
   public updatedAt: Date;
@@ -56,13 +56,13 @@ export class TodoService {
     return await this.db?.insert(TodoService.TABLE_NAME, newTodoPayload);
   }
     
-  public async getCompletionStatus(todoId: number): Promise<boolean> {
+  public async getCompletionStatus(todoId: number, userId: number): Promise<boolean> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
     const isCompleted = await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL),
+      new FilterBuilder().addCondition('id', todoId, FilterType.EQUAL).addCondition('user_id', userId, FilterType.EQUAL)
     )
     if (isCompleted.length === 0) return false;
     return isCompleted[0].completed === 1;

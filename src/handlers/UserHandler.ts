@@ -5,6 +5,12 @@ import { matchedData, validationResult } from 'express-validator';
 import { UserService } from '../services/UserService';
 import { SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
+import { JWTStrategy, TokenContext } from '../helpers/JWTFactory';
+import { RequestWithUserId } from '../middleware/AuthenticationMiddleware';
+
+const expirationTime = '7d';
+const authStrategy: JWTStrategy = new JWTStrategy('mysecretkey');
+let tokenContext: TokenContext = new TokenContext(authStrategy);
 
 export async function loginHandler(
   req: Request,
@@ -25,7 +31,8 @@ export async function loginHandler(
       return res.status(401).json({ error: 'Invalid credentials', code: 401 });
     } else {
       // Generate a JWT, with the user's id and an expiration time of 7 days
-      return res.status(200).json({ message: 'Login successful', data: user });
+      let token = tokenContext.createToken(user.id, expirationTime);
+      return res.status(200).json({ message: 'Login successful', jwt: token, expirationTime });
     }
   } catch (error) {
     console.error(error);
@@ -82,7 +89,7 @@ export async function createUser(
 }
 
 export async function updateUserHandler(
-  req: Request,
+  req: RequestWithUserId,
   res: Response,
 ) {
   const errors = validationResult(req);
@@ -90,7 +97,8 @@ export async function updateUserHandler(
     return res.status(400).json({ error: errors.array(), code: 400 });
   }
   try {
-    const { id, name, email, password } = matchedData(req);
+    const { name, email, password } = matchedData(req);
+    const id = Number(req.userId);
     const userService = new UserService();
     await userService.build();
     const updatedUser = await userService.update(id, name, email, password);

@@ -1,53 +1,36 @@
 import {
-  completeTodoHandler,
-  deleteTodoHandler,
-  getTodoHandler,
-  insertTodoHandler,
-  listTodosHandler,
-  retrieveTodosByStatusHandler,
-  revertTodoHandler,
-  updateTodoHandler,
+  completeTodoHandler, deleteTodoHandler, getTodoHandler, insertTodoHandler, listTodosHandler, retrieveTodosByStatusHandler, revertTodoHandler, updateTodoHandler
 } from './handlers/TodoHandler';
 import {
-  createUserHandler,
-  deleteUserHandler,
-  loginHandler,
-  updateUserHandler,
+  createUserHandler, deleteUserHandler, loginHandler, updateUserHandler
 } from './handlers/UserHandler';
 
 import {
-  createUserValidation,
-  deleteUserValidation,
-  loginValidation,
-  updateUserValidation,
+  createUserValidation, loginValidation, updateUserValidation
 } from './validations/UserValidations';
 import {
-  bodyIdValidation,
-  idTodoValidation,
-  insertTodoValidations,
-  retrieveTodosByStatusValidations,
-  updateTodoValidations,
+  bodyIdValidation, idTodoValidation, insertTodoValidations, retrieveTodosByStatusValidations, updateTodoValidations
 } from './validations/TodoValidations';
+import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
+
 import express from 'express';
 
 const router = express.Router();
 
-router.get('/todos/all/:id', idTodoValidation, listTodosHandler);
-router.get('/todos/:id', idTodoValidation, getTodoHandler);
-router.get(
-  '/todos/status/:status',
+router.get('/todos/', authenticationMiddleware, listTodosHandler);
+router.get('/todos/:id', authenticationMiddleware, idTodoValidation, getTodoHandler);
+router.get(  '/todos/status/:status',
   retrieveTodosByStatusValidations,
-  retrieveTodosByStatusHandler,
-);
+  retrieveTodosByStatusHandler,);
 
-router.put('/todos/:id', updateTodoValidations, updateTodoHandler);
-router.post('/todos', insertTodoValidations, insertTodoHandler);
-router.post('/todos/complete', bodyIdValidation, completeTodoHandler);
-router.post('/todos/revert', bodyIdValidation, revertTodoHandler);
-router.delete('/todos/:id', bodyIdValidation, deleteTodoHandler);
+router.put('/todos/:id', authenticationMiddleware ,updateTodoValidations, updateTodoHandler);
+router.post('/todos',authenticationMiddleware,insertTodoValidations, insertTodoHandler);
+router.post('/todos/:id/complete',authenticationMiddleware, idTodoValidation, completeTodoHandler);
+router.post('/todos/:id/revert',authenticationMiddleware, idTodoValidation, revertTodoHandler);
+router.delete('/todos/:id',authenticationMiddleware, bodyIdValidation, deleteTodoHandler);
 
-router.put('/users/:id', updateUserValidation, updateUserHandler);
+router.put('/users/me', authenticationMiddleware, updateUserValidation, updateUserHandler);
 router.post('/users/new', createUserValidation, createUserHandler);
 router.post('/users/login', loginValidation, loginHandler);
-router.delete('/users/:id', deleteUserValidation, deleteUserHandler);
+router.delete('/users/:id', authenticationMiddleware, deleteUserHandler);
 export default router;

@@ -19,10 +19,8 @@ export const bodyIdValidation = [
 export const insertTodoValidations = [
   body('title', 'The title must be a string').isString(),
   body('description', 'The description must be a string').isString(),
-  body('userId', 'The userId must be a positive integer').isInt( { gt: 0 })
 ];
 
 export const retrieveTodosByStatusValidations = [
   param('status').toBoolean(),
-  body('userId', 'The userId must be a string').exists().isString()
 ];

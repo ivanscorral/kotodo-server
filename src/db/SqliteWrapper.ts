@@ -1,37 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
-export function formatValue<T>(value: T): string {
-  if (typeof value === 'string') {
-    return `'${value.replace(/'/g, '\'\'')}'`;
-  }
-  if (typeof value === 'boolean') {
-    return value ? '1' : '0';
-  }
-  if (value === null || value === undefined) {
-    return 'NULL';
-  }
-  return value.toString();
-}
-
-export function simulateSqlQuery(query: string, params: any[]): string {
-  let index = 0;
-  const result = query.replace(/\?/g, () => {
-    const value = params[index++];
-    return formatValue(value);
-  });
-  return result;
-}
-
-export enum FilterType {
-    EQUAL = '=',
-    NOT_EQUAL = '<>',
-    LESS_THAN = '<',
-    GREATER_THAN = '>',
-    LESS_THAN_OR_EQUAL = '<=',
-    GREATER_THAN_OR_EQUAL = '>=',
-    LIKE = 'LIKE',
-}
+import { FilterType } from './filterTypes';
+import { simulateSqlQuery } from './dbLogging';
 
 export enum LogicalOperator {
     AND = 'AND',
@@ -41,7 +12,7 @@ export enum LogicalOperator {
 export class FilterCondition {
   constructor(
         public field: string,
-        public value: any,
+        public value: unknown,
         public type: FilterType,
   ) {}
 }
@@ -104,47 +75,7 @@ export class SQLiteWrapper {
     return this.processConditions(conditions);
   }
 
-  public async selectAll(
-    tableName: string,
-    filterBuilder?: FilterBuilder,
-  ): Promise<any> {
-    const { sql, values } = this.buildSqlQuery(filterBuilder);
-    let fullSql = `SELECT * FROM '${tableName}'`;
-    if (sql) {
-      fullSql += ` WHERE ${sql}`;
-    }
-    console.log(`[SELECT statement] ${simulateSqlQuery(fullSql, values)}`);
-    try {
-      const results = await this.db?.all(fullSql, values);
-      console.log(results);
-      return results;
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  }
-  public async selectRows(
-    rows: string[] | string,
-    tableName: string,
-    filterBuilder?: FilterBuilder,
-  ): Promise<any> {
-    const selectedRows = Array.isArray(rows) ? rows.join(', ') : rows;
-    const { sql, values } = this.buildSqlQuery(filterBuilder);
-    let fullSql = `SELECT ${selectedRows} FROM '${tableName}'`;
-    if (sql) {
-      fullSql += ` WHERE ${sql}`;
-    }
-    console.log(`[SELECT statement] ${simulateSqlQuery(fullSql, values)}`);
-    try {
-      const results = await this.db?.all(fullSql, values);
-      console.log(results);
-      return results;
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
-  }
-    
+
   private processConditions(
     conditions: (FilterCondition | FilterGroup)[],
     operator: LogicalOperator = LogicalOperator.AND,
@@ -222,7 +153,34 @@ export class SQLiteWrapper {
     }
   }
     
-
+  private async executeSelect(
+    sql: string,
+    values: any[],
+  ): Promise<any> {
+    console.log(`[SELECT statement] ${simulateSqlQuery(sql, values)}`);
+    try {
+      const results = await this.db?.all(sql, values);
+      console.log(results);
+      return results;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  }
+  
+  public async selectAll(tableName: string, filterBuilder?: FilterBuilder): Promise<any> {
+    const { sql, values } = this.buildWhereClause(filterBuilder);
+    const fullSql = `SELECT * FROM '${tableName}'${sql ? ` WHERE ${sql}` : ''}`;
+    return this.executeSelect(fullSql, values);
+  }
+  
+  public async selectRows(rows: string[] | string, tableName: string, filterBuilder?: FilterBuilder): Promise<any> {
+    const selectedRows = Array.isArray(rows) ? rows.join(', ') : rows;
+    const { sql, values } = this.buildWhereClause(filterBuilder);
+    const fullSql = `SELECT ${selectedRows} FROM '${tableName}'${sql ? ` WHERE ${sql}` : ''}`;
+    return this.executeSelect(fullSql, values);
+    
+  }
     
   public async update(
     tableName: string,
@@ -257,6 +215,14 @@ export class SQLiteWrapper {
       throw err;
     }
   }
+  
+  private buildWhereClause(filterBuilder?: FilterBuilder): { sql: string, values: any[] } {
+    if (!filterBuilder) {
+      return { sql: '', values: [] };
+    }
+    const conditions = filterBuilder.build();
+    return this.processConditions(conditions);
+  } 
     
     
 

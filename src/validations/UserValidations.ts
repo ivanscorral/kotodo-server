@@ -15,7 +15,6 @@ export const loginValidation = [
 ]
 
 export const updateUserValidation = [
-  param('id', 'The id must be a positive integer').isInt( { gt: 0 }), 
   oneOf([
     check('name', 'The name must be a string').isString(),
     check('email', 'The email must be a valid email').isEmail(),

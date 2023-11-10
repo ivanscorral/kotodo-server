@@ -2,7 +2,8 @@
 import { SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
 import * as bcrypt from 'bcrypt';
-import { FilterBuilder, FilterType } from '../db/SqliteWrapper';
+import { FilterBuilder } from '../db/SqliteWrapper';
+import { FilterType } from '../db/filterTypes';
 export class UserModel implements User {
   id: number;
   name: string;
