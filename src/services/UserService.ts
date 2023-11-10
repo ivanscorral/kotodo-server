@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SQLiteWrapper } from '../db/SqliteWrapper';
+import { FilterCondition, LogicalOperator, SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
 import * as bcrypt from 'bcrypt';
 import { FilterBuilder } from '../db/SqliteWrapper';
@@ -44,8 +44,16 @@ export class UserService {
     }
     
     const filterBuilder = new FilterBuilder();
-    if (name) filterBuilder.addCondition('name', name, FilterType.EQUAL);
-    if (email) filterBuilder.addCondition('email', email, FilterType.EQUAL);
+    if (name && email) {
+      filterBuilder.addGroup(LogicalOperator.OR, [
+        new FilterCondition('name', name, FilterType.EQUAL),
+        new FilterCondition('email', email, FilterType.EQUAL),
+      ])
+    } else if (name) {
+      filterBuilder.addCondition('name', name, FilterType.EQUAL);
+    } else if (email) {
+      filterBuilder.addCondition('email', email, FilterType.EQUAL);
+    }
   
     const users = await this.db.selectAll(UserService.TABLE_NAME, filterBuilder);
     if (users.length === 0) {
