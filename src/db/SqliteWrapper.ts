@@ -3,16 +3,22 @@ import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import { FilterType } from './filterTypes';
 import { simulateSqlQuery } from './dbLogging';
+import { DatabaseOperationError, handleDatabaseError, DatabaseError } from './dbErrors';
 
 export enum LogicalOperator {
     AND = 'AND',
     OR = 'OR',
 }
 
+export interface SQLQuery {
+  sql: string;
+  values: (string | number)[];
+}
+
 export class FilterCondition {
   constructor(
         public field: string,
-        public value: unknown,
+        public value: (string | number),
         public type: FilterType,
   ) {}
 }
@@ -33,7 +39,7 @@ export class FilterGroup {
 export class FilterBuilder {
   private conditions: (FilterCondition | FilterGroup)[] = [];
 
-  addCondition(field: string, value: any, type: FilterType): FilterBuilder {
+  addCondition(field: string, value: (string | number), type: FilterType): FilterBuilder {
     this.conditions.push(new FilterCondition(field, value, type));
     return this;
   }
@@ -52,7 +58,7 @@ export class FilterBuilder {
 }
 
 export class SQLiteWrapper {
-  private db: Database | null = null;
+  private db?: Database;
 
   constructor(private dbPath: string) {}
 
@@ -63,10 +69,7 @@ export class SQLiteWrapper {
     });
     return this;
   }
-  private buildSqlQuery(filterBuilder?: FilterBuilder): {
-        sql: string;
-        values: any[];
-    } {
+  private buildSqlQuery(filterBuilder?: FilterBuilder): SQLQuery {
     if (!filterBuilder) {
       return { sql: '', values: [] };
     }
@@ -76,32 +79,40 @@ export class SQLiteWrapper {
   }
 
 
+  /**
+ * Converts filter conditions/groups to SQL query parts.
+ * @param conditions - Array of FilterCondition or FilterGroup.
+ * @param operator - LogicalOperator (AND/OR), default AND.
+ * @returns Object with SQL string and values array.
+ */
+
   private processConditions(
     conditions: (FilterCondition | FilterGroup)[],
     operator: LogicalOperator = LogicalOperator.AND,
-  ): { sql: string; values: any[] } {
-    const sqlParts: string[] = [];
-    const values: any[] = [];
-
-    for (const condition of conditions) {
+  ): SQLQuery {
+    const values: (string | number)[] = [];
+    
+    const sql = conditions.map(condition => {
       if (condition instanceof FilterCondition) {
-        sqlParts.push(`${condition.field} ${condition.type} ?`);
         values.push(condition.value);
-      } else if (condition instanceof FilterGroup) {
-        console.log(`[GROUP] ${JSON.stringify(condition)}`);
-        const { sql, values: groupValues } = this.processConditions(
-          condition.conditions,
-          condition.operator,
-        );
-        if (sql) {
-          sqlParts.push(`(${sql})`);
-          values.push(...groupValues);
-        }
+        return `${condition.field} ${condition.type} ?`;
       }
-      console.log(sqlParts);
-    }
-
-    return { sql: sqlParts.join(` ${operator} `), values };
+      
+      if (condition instanceof FilterGroup) {
+        const { sql: groupSql, values: groupValues } = this.processConditions(
+          condition.conditions,
+          condition.operator
+        );
+        
+        if (groupSql) {
+          values.push(...groupValues);
+          return `(${groupSql})`;
+        }
+        
+      }
+    }).filter(Boolean).join(` ${operator} `);
+    
+    return { sql, values };
   }
 
   public async insert(tableName: string, data: Record<string, any>): Promise<number> {
@@ -118,8 +129,8 @@ export class SQLiteWrapper {
         throw new Error('Insert operation failed or lastID is not a number');
       }
     } catch (error) {
-      console.error(`[ERROR] Failed to insert data: ${error}`);
-      throw error;
+      console.error(`[INSERT ERROR] Failed to insert data: ${error}`);
+      handleDatabaseError(error);
     }
   }
     
@@ -148,8 +159,8 @@ export class SQLiteWrapper {
     
       return { affectedRows };
     } catch (err) {
-      console.error(`[ERROR] Failed to delete data from ${tableName}: ${err}`);
-      throw err;
+      console.error(`[DELETE ERROR] Failed to delete data from ${tableName}: ${err}`);
+      handleDatabaseError(err);
     }
   }
     
@@ -164,14 +175,19 @@ export class SQLiteWrapper {
       return results;
     } catch (err) {
       console.log(err);
-      throw err;
+      handleDatabaseError(err);
     }
   }
   
   public async selectAll(tableName: string, filterBuilder?: FilterBuilder): Promise<any> {
-    const { sql, values } = this.buildWhereClause(filterBuilder);
-    const fullSql = `SELECT * FROM '${tableName}'${sql ? ` WHERE ${sql}` : ''}`;
-    return this.executeSelect(fullSql, values);
+    try {
+      const { sql, values } = this.buildWhereClause(filterBuilder);
+      const fullSql = `SELECT * FROM '${tableName}'${sql ? ` WHERE ${sql}` : ''}`;
+      return this.executeSelect(fullSql, values);
+    } catch (err) {
+      console.error(`[SELECT ERROR] Failed to select data from ${tableName}: ${err}`);
+      handleDatabaseError(err);
+    }
   }
   
   public async selectRows(rows: string[] | string, tableName: string, filterBuilder?: FilterBuilder): Promise<any> {
@@ -188,7 +204,7 @@ export class SQLiteWrapper {
     filterBuilder: FilterBuilder,
   ): Promise<void> {
     if (!Object.keys(data).length) {
-      throw new Error('No data provided to update');
+      throw new DatabaseError(DatabaseOperationError.SQL_ERROR, 'No data provided to update');
     }
     
     // Build SET clause
@@ -198,8 +214,9 @@ export class SQLiteWrapper {
     
     // Build WHERE clause
     const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
+    
     if (!whereSql) {
-      throw new Error('No conditions provided to update');
+      throw new DatabaseError(DatabaseOperationError.SQL_ERROR, 'No conditions provided for update');
     }
     
     const sql = `UPDATE ${tableName} SET ${setSql} WHERE ${whereSql}`;
@@ -211,8 +228,8 @@ export class SQLiteWrapper {
       const result = await this.db?.run(sql, values);
       console.log('[UPDATE result]', result);
     } catch (err) {
-      console.error(`[ERROR] Failed to update data: ${err}`);
-      throw err;
+      console.error(`[UPDATE ERROR] ${err}`);
+      handleDatabaseError(err);
     }
   }
   
@@ -255,12 +272,14 @@ export class SQLiteWrapper {
       }
     } catch (error) {
       console.error(`[ERROR] Failed to insert data: ${error}`);
-      throw error;
+      handleDatabaseError(error);
     }
   }
-
+  
+  
   // Close the database connection
   public async close(): Promise<void> {
     await this.db?.close();
   }
+  
 }
