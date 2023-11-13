@@ -7,6 +7,7 @@ import { SQLiteWrapper } from '../db/SqliteWrapper';
 import { User } from '../models/user';
 import { JWTStrategy, TokenContext } from '../helpers/JWTFactory';
 import { RequestWithUserId } from '../middleware/AuthenticationMiddleware';
+import { DatabaseError } from '../db/dbErrors';
 
 const expirationTime = '7d';
 const authStrategy: JWTStrategy = new JWTStrategy('mysecretkey');
@@ -54,8 +55,9 @@ export async function createUserHandler(
     const user = await createUser(name, email, password);
     return res.status(201).json({ message: 'User created', data: user });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    if (error instanceof DatabaseError) {
+      return res.status(500).json({ error: error.message, code: 500 });
+    }
   }
 }
 

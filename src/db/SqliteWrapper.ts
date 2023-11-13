@@ -141,7 +141,7 @@ export class SQLiteWrapper {
     // Build WHERE clause
     const { sql: whereSql, values: whereValues } = this.buildSqlQuery(filterBuilder);
     if (!whereSql) {
-      throw new Error('No conditions provided for delete');
+      throw new 
     }
     
     // Parameterized SQL query to prevent SQL injection

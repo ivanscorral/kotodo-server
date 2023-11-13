@@ -44,7 +44,7 @@ export class TodoService {
     }
     return await this.db.selectAll(
       TodoService.TABLE_NAME,
-      new FilterBuilder().addCondition('user_id', userId, FilterType.EQUAL).addCondition('completed', status, FilterType.EQUAL),
+      new FilterBuilder().addCondition('user_id', userId, FilterType.EQUAL).addCondition('completed', status ? 1 : 0, FilterType.EQUAL),
     );
         
   }
